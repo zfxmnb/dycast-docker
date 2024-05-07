@@ -15,13 +15,13 @@
       <div class="dy-room-box">
         <div class="dy-room-tag">ws地址</div>
         <input v-model="relayWs" type="text" class="dy-room-input" placeholder="请输入ws/wss协议链接" />
-        <button class="dy-room-btn" @click="relay">转发</button>
+        <button class="dy-room-btn" @click="relay">设置</button>
       </div>
       <div class="dy-title">信息格式化</div>
       <div class="dy-room-box" style="height: auto; align-items: flex-start;">
         <div class="dy-room-tag">js脚本</div>
-        <textarea v-bind:disabled="!relayWs" v-model="formatRelayMsgStr" type="text" class="dy-room-input" placeholder="请输入js脚本, 如：return data" rows="5" />
-        <button v-bind:hidden="!relayWs" style="min-height: 36px" class="dy-room-btn" @click="formatRelayMsgChange">生效</button>
+        <textarea v-model="formatRelayMsgStr" type="text" class="dy-room-input" placeholder="请输入js脚本, 如：return data" rows="5" />
+        <button style="min-height: 36px" class="dy-room-btn" @click="formatRelayMsgChange">设置</button>
       </div>
       <div class="dy-title">
         <span>房间信息</span>
@@ -75,9 +75,9 @@ const relayWs = ref<string | null>(params?.ws ?? localStorage.getItem('_wsUrl'))
 const formatRelayMsgStr = ref<string | undefined>(params?.script?.replace(/%20/g, ' ').replace(/%26/g, '&').replace(/%23/g, '#').replace(/%40/g, '@').replace(/%3D/g, '=').replace(/%3E/g, '>').replace(/%3C/g, '>').replace(/%22/g, '"').replace(/%27/g, "'") ?? localStorage.getItem('_formatRelayMsgStr') as unknown as undefined);
 // 格式化数据
 const formatRelayMsg = ref<(data: Mess) => any>();
-const formatRelayMsgChange = () => {
+const formatRelayMsgChange = (e: any) => {
   formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value);
-  setUrl();
+  e && setUrl();
   if (formatRelayMsgStr.value?.trim()) {
     formatRelayMsg.value = Function('data', formatRelayMsgStr.value) as (data: Mess) => any;
   }
@@ -125,12 +125,15 @@ onMounted(() => {
 });
 
 function setUrl() {
-  let search = `room=${roomNum.value}&ws=${relayWs.value}`
+  let search = `room=${roomNum.value}`
   if (params.hide_msg_view) {
     search = `hide_msg_view=1&${search}`
   }
   if (params.auto_connect) {
     search = `auto_connect=1&${search}`
+  }
+  if (relayWs.value) {
+    search = `${search}&ws=${relayWs.value}`
   }
   if (formatRelayMsgStr?.value) {
     search = `${search}&script=${formatRelayMsgStr.value}`
@@ -141,7 +144,7 @@ function setUrl() {
 /**
  * 连接直播间
  */
-function gotoConnect() {
+function gotoConnect(e: any) {
   if (!roomNum.value) {
     rnFlag.value = true;
     return;
@@ -151,7 +154,7 @@ function gotoConnect() {
     return;
   }
   localStorage.setItem('_roomNum', roomNum.value);
-  setUrl();
+  e && setUrl();
   rnFlag.value = false;
   let n = window.open(`https://live.douyin.com/${roomNum.value}`, '_blank');
   setTimeout(() => {
@@ -178,12 +181,14 @@ function gotoConnect() {
 /**
  * 转发消息
  */
-function relay() {
+function relay(e: any) {
   if (relayWs.value) {
     relaySocket = new WebSocket(relayWs.value);
-    localStorage.setItem('_wsUrl', relayWs.value);
-    setUrl();
+  } else {
+    relaySocket = null
   }
+  localStorage.setItem('_wsUrl', relayWs.value);
+  e && setUrl();
 }
 
 /**
