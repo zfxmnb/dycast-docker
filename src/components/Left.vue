@@ -76,7 +76,7 @@ const formatRelayMsgStr = ref<string | undefined>(params?.script?.replace(/%20/g
 // 格式化数据
 const formatRelayMsg = ref<(data: Mess) => any>();
 const formatRelayMsgChange = (e?: any) => {
-  formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value ?? ');
+  formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value ?? '');
   e && setUrl();
   if (formatRelayMsgStr.value?.trim()) {
     formatRelayMsg.value = Function('data', formatRelayMsgStr.value) as (data: Mess) => any;
