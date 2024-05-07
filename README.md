@@ -195,3 +195,12 @@ interface RankItem {
 ## 免责声明
 
 本项目仅用于学习交流使用，禁止一切非法滥用，否则后果自负。
+
+
+# docker
+
+[源项目:skmcj/dycast](https://github.com/skmcj/dycast)
+
+```sh
+docker run -it -p 4123:4123 -d zfxmnb/dycast-docker
+```

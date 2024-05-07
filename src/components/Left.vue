@@ -17,6 +17,12 @@
         <input v-model="relayWs" type="text" class="dy-room-input" placeholder="请输入ws/wss协议链接" />
         <button class="dy-room-btn" @click="relay">转发</button>
       </div>
+      <div class="dy-title">信息格式化</div>
+      <div class="dy-room-box" style="height: auto; align-items: flex-start;">
+        <div class="dy-room-tag">js</div>
+        <textarea v-bind:disabled="!relayWs" v-model="formatRelayMsgStr" type="text" class="dy-room-input" placeholder="请输入js脚本, 如：return data" rows="5" />
+        <button v-bind:hidden="!relayWs" style="min-height: 36px" class="dy-room-btn" @click="formatRelayMsgChange">生效</button>
+      </div>
       <div class="dy-title">
         <span>房间信息</span>
         <span
@@ -61,9 +67,19 @@ import { getRoomInfoApi } from '@/api/commonApi';
 import { ref, inject, onMounted, type Ref } from 'vue';
 
 // 房间号
-const roomNum = ref<string | null>(null);
-
-const relayWs = ref<string>('');
+const roomNum = ref<string | null>(localStorage.getItem('_roomNum'));
+// ws
+const relayWs = ref<string | null>(localStorage.getItem('_wsUrl'));
+// 格式化数据
+const formatRelayMsgStr = ref<string | undefined>(localStorage.getItem('_formatRelayMsgStr') as unknown as undefined);
+// 格式化数据
+const formatRelayMsg = ref<(data: Mess) => any>();
+const formatRelayMsgChange = () => {
+  formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value);
+  if (formatRelayMsgStr.value?.trim()) {
+    formatRelayMsg.value = Function('data', formatRelayMsgStr.value) as (data: Mess) => any;
+  }
+}
 // 弹幕列表
 const chatList = inject<Mess[]>('chatList');
 // 点赞送礼榜
@@ -102,6 +118,7 @@ let messListDom: HTMLElement | null;
 
 onMounted(() => {
   messListDom = document.getElementById('mess-list');
+  formatRelayMsgChange();
 });
 
 /**
@@ -116,6 +133,7 @@ function gotoConnect() {
     rnFlag.value = true;
     return;
   }
+  localStorage.setItem('_roomNum', roomNum.value);
   rnFlag.value = false;
   let n = window.open(`https://live.douyin.com/${roomNum.value}`, '_blank');
   setTimeout(() => {
@@ -143,7 +161,10 @@ function gotoConnect() {
  * 转发消息
  */
 function relay() {
-  relaySocket = new WebSocket(relayWs.value);
+  if (relayWs.value) {
+    relaySocket = new WebSocket(relayWs.value);
+    localStorage.setItem('_wsUrl', relayWs.value);
+  }
 }
 
 /**
@@ -225,8 +246,16 @@ function renewPos() {
  * @param data
  */
 function relayMess(data: Mess) {
-  if (!data.type) return;
-  relaySocket && relaySocket?.send(JSON.stringify(data));
+  if (!data.type || !relaySocket) return;
+  let result = data;
+  if (typeof formatRelayMsg.value === 'function') {
+    try{
+      result = formatRelayMsg.value?.(data);
+    }catch(err) {
+      console.error(err);
+    }
+  }
+  relaySocket?.send?.(JSON.stringify(result));
 }
 </script>
 
