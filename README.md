@@ -204,3 +204,9 @@ interface RankItem {
 ```sh
 docker run -it -p 4123:4123 -d zfxmnb/dycast-docker
 ```
+## url 参数
+- auto_connect=1 自动链接直播间
+- hide_msg_view=1 隐藏弹幕滚动框
+- room=xxx 直播间id
+- ws=ws://xxx 转发ws链接
+- script=console.log(data);return%20{...data}; 信息格式化js脚本

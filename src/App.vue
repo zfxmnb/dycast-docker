@@ -1,7 +1,7 @@
 <template>
   <div class="main">
-    <Left class="left" />
-    <Right class="right" />
+    <Left :params=params class="left" />
+    <Right v-if="msgView" class="right" />
   </div>
 </template>
 
@@ -53,6 +53,22 @@ const chatList = reactive<Mess[]>([]);
 const rankList = reactive<RankItem[]>([]);
 // 是否停止自动滚动
 const isStopScroll = ref(false);
+// 是否展示滚动弹幕
+const getParams = () => {
+  const list = location.search.substring(1).split('&');
+  const params: any = {};
+  for (var i = 0; i < list.length; i++) {
+    var pos = list[i].split('=');
+    const index = list[i].indexOf('=')
+    if (index > 0) {
+      params[list[i].substring(0, index)] = list[i].substring(index+1);
+    }
+  }
+  return params
+}
+const params = ref<any>(getParams());
+const msgView = ref(!params?.value?.hide_msg_view);
+
 
 provide('chatList', chatList);
 provide('rankList', rankList);

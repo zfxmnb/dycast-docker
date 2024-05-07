@@ -19,7 +19,7 @@
       </div>
       <div class="dy-title">信息格式化</div>
       <div class="dy-room-box" style="height: auto; align-items: flex-start;">
-        <div class="dy-room-tag">js</div>
+        <div class="dy-room-tag">js脚本</div>
         <textarea v-bind:disabled="!relayWs" v-model="formatRelayMsgStr" type="text" class="dy-room-input" placeholder="请输入js脚本, 如：return data" rows="5" />
         <button v-bind:hidden="!relayWs" style="min-height: 36px" class="dy-room-btn" @click="formatRelayMsgChange">生效</button>
       </div>
@@ -64,18 +64,20 @@
 <script setup lang="ts">
 import { DyClient, handleMessage } from '../utils/client';
 import { getRoomInfoApi } from '@/api/commonApi';
-import { ref, inject, onMounted, type Ref } from 'vue';
+import { ref, inject, onMounted, useAttrs, type Ref } from 'vue';
+const { params } = useAttrs() as { params: any };
 
 // 房间号
-const roomNum = ref<string | null>(localStorage.getItem('_roomNum'));
+const roomNum = ref<string | null>(params?.room ?? localStorage.getItem('_roomNum'));
 // ws
-const relayWs = ref<string | null>(localStorage.getItem('_wsUrl'));
+const relayWs = ref<string | null>(params?.ws ?? localStorage.getItem('_wsUrl'));
 // 格式化数据
-const formatRelayMsgStr = ref<string | undefined>(localStorage.getItem('_formatRelayMsgStr') as unknown as undefined);
+const formatRelayMsgStr = ref<string | undefined>(params?.script?.replace(/%20/g, ' ').replace(/%26/g, '&').replace(/%23/g, '#').replace(/%40/g, '@').replace(/%3D/g, '=').replace(/%3E/g, '>').replace(/%3C/g, '>').replace(/%22/g, '"').replace(/%27/g, "'") ?? localStorage.getItem('_formatRelayMsgStr') as unknown as undefined);
 // 格式化数据
 const formatRelayMsg = ref<(data: Mess) => any>();
 const formatRelayMsgChange = () => {
   formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value);
+  setUrl();
   if (formatRelayMsgStr.value?.trim()) {
     formatRelayMsg.value = Function('data', formatRelayMsgStr.value) as (data: Mess) => any;
   }
@@ -119,7 +121,23 @@ let messListDom: HTMLElement | null;
 onMounted(() => {
   messListDom = document.getElementById('mess-list');
   formatRelayMsgChange();
+  relayWs?.value && relay();
+  params.auto_connect && gotoConnect();
 });
+
+function setUrl() {
+  let search = `room=${roomNum.value}&ws=${relayWs.value}`
+  if (params.hide_msg_view) {
+    search = `hide_msg_view=1&${search}`
+  }
+  if (params.auto_connect) {
+    search = `auto_connect=1&${search}`
+  }
+  if (formatRelayMsgStr?.value) {
+    search = `${search}&script=${formatRelayMsgStr.value}`
+  }
+  history.replaceState(null, '', `?${search}`);
+}
 
 /**
  * 连接直播间
@@ -134,6 +152,7 @@ function gotoConnect() {
     return;
   }
   localStorage.setItem('_roomNum', roomNum.value);
+  setUrl();
   rnFlag.value = false;
   let n = window.open(`https://live.douyin.com/${roomNum.value}`, '_blank');
   setTimeout(() => {
@@ -164,6 +183,7 @@ function relay() {
   if (relayWs.value) {
     relaySocket = new WebSocket(relayWs.value);
     localStorage.setItem('_wsUrl', relayWs.value);
+    setUrl();
   }
 }
 
@@ -250,7 +270,15 @@ function relayMess(data: Mess) {
   let result = data;
   if (typeof formatRelayMsg.value === 'function') {
     try{
-      result = formatRelayMsg.value?.(data);
+      result = formatRelayMsg.value(data);
+    }catch(err) {
+      console.error(err);
+    }
+  // @ts-ignore
+  } else if (typeof window.MessageFormat === 'function') {
+    try{
+      // @ts-ignore
+      result = window.MessageFormat(data);
     }catch(err) {
       console.error(err);
     }
