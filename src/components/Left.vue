@@ -121,7 +121,6 @@ let messListDom: HTMLElement | null;
 onMounted(() => {
   messListDom = document.getElementById('mess-list');
   formatRelayMsgChange();
-  relayWs?.value && relay();
   params.auto_connect && gotoConnect();
 });
 
@@ -210,6 +209,7 @@ function connection(roomId: string, uniqueId: string) {
   client.onOff = (flag: boolean) => {
     if (flag) {
       connectCode.value = 200;
+      relayWs?.value && relay();
     } else {
       connectCode.value = 400;
     }
