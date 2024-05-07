@@ -75,7 +75,7 @@ const relayWs = ref<string | null>(params?.ws ?? localStorage.getItem('_wsUrl'))
 const formatRelayMsgStr = ref<string | undefined>(params?.script?.replace(/%20/g, ' ').replace(/%26/g, '&').replace(/%23/g, '#').replace(/%40/g, '@').replace(/%3D/g, '=').replace(/%3E/g, '>').replace(/%3C/g, '>').replace(/%22/g, '"').replace(/%27/g, "'") ?? localStorage.getItem('_formatRelayMsgStr') as unknown as undefined);
 // 格式化数据
 const formatRelayMsg = ref<(data: Mess) => any>();
-const formatRelayMsgChange = (e: any) => {
+const formatRelayMsgChange = (e?: any) => {
   formatRelayMsgStr.value && localStorage.setItem('_formatRelayMsgStr', formatRelayMsgStr.value);
   e && setUrl();
   if (formatRelayMsgStr.value?.trim()) {
@@ -144,7 +144,7 @@ function setUrl() {
 /**
  * 连接直播间
  */
-function gotoConnect(e: any) {
+function gotoConnect(e?: any) {
   if (!roomNum.value) {
     rnFlag.value = true;
     return;
@@ -181,7 +181,7 @@ function gotoConnect(e: any) {
 /**
  * 转发消息
  */
-function relay(e: any) {
+function relay(e?: any) {
   if (relayWs.value) {
     relaySocket = new WebSocket(relayWs.value);
   } else {
