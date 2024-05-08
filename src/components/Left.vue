@@ -144,7 +144,7 @@ function setUrl() {
 /**
  * 连接直播间
  */
-function gotoConnect(e?: any) {
+function gotoConnect(e?: any, quiet?: boolean) {
   if (!roomNum.value) {
     rnFlag.value = true;
     return;
@@ -156,7 +156,7 @@ function gotoConnect(e?: any) {
   localStorage.setItem('_roomNum', roomNum.value);
   e && setUrl();
   rnFlag.value = false;
-  let n = window.open(`https://live.douyin.com/${roomNum.value}`, '_blank');
+  let n = quiet ? null : window.open(`https://live.douyin.com/${roomNum.value}`, '_blank');
   setTimeout(() => {
     n?.close();
     roomNum.value &&
@@ -175,7 +175,7 @@ function gotoConnect(e?: any) {
         .catch((err: any) => {
           console.error(err);
         });
-  }, 2000);
+  }, 3000);
 }
 
 /**
@@ -216,7 +216,17 @@ function connection(roomId: string, uniqueId: string) {
       connectCode.value = 200;
       relayWs?.value && relay();
     } else {
+      const preConnectCode = connectCode.value;
       connectCode.value = 400;
+      // 从连接状态变成断线状态
+      if (preConnectCode === 200) {
+        // 执行静默重连
+        gotoConnect(null, true)
+        setTimeout(() => {
+           // 静默重连失败，打开新tab重连
+          connectCode.value === 400 && gotoConnect()
+        }, 3000)
+      }
     }
   };
 }
@@ -271,7 +281,7 @@ function renewPos() {
  * @param data
  */
 function relayMess(data: Mess) {
-  if (!data.type || !relaySocket) return;
+  if (!data.type || relaySocket?.readyState !== 1) return;
   let result = data;
   if (typeof formatRelayMsg.value === 'function') {
     try{
@@ -288,7 +298,7 @@ function relayMess(data: Mess) {
       console.error(err);
     }
   }
-  relaySocket?.send?.(JSON.stringify(result));
+  relaySocket.send(JSON.stringify(result));
 }
 </script>
 
